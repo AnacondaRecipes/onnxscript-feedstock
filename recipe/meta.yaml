@@ -80,8 +80,6 @@ requirements:
 {% set ignore_tests = ignore_tests + " --ignore=tests/if_test.py" %}                           # [py==314]
 {% set ignore_tests = ignore_tests + " --ignore=tests/loop_test.py" %}                         # [py==314]
 {% set ignore_tests = ignore_tests + " --ignore=tests/optimizer/test_models.py" %}             # [py==314]
-# exclude due to problem with expecttest on py313
-{% set ignore_tests = ignore_tests + " --ignore=tests/function_libs/torch_lib/ops_test.py" %}  # [py==313]
 
 test:
   source_files:
@@ -93,12 +91,11 @@ test:
     - pip
     - pytest !=7.1.0
     - parameterized
-    # CI: nothing provides __cuda needed by pytorch-2.7.0-gpu_cuda128_py310h0e49702_302
+    # Use pytorch CPU version. CI: nothing provides __cuda needed by pytorch-2.7.0-gpu_cuda128
     - pytorch-cpu >=2.3
     - onnxruntime >=1.17.0  # [py<314]
     - torchvision >=0.18.0  # [py<314]
-    # Resolver issue with expecttest on py313
-    - expecttest >=0.1.6  # [not py==313]
+    - expecttest >=0.1.6
   commands:
     - pip check
     - pytest -v tests {{ ignore_tests }} -k "not ({{ tests_to_skip }})" {{ deselect_tests }}
