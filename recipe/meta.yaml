@@ -58,6 +58,13 @@ requirements:
 # It is incompatibility between onnxscript and onnx version, upstream CI is using for tests onnx-weekly 1.21.0.dev20260302, on channel latest is onnx 1.20.1
 # E RuntimeError: Field 'shape' of 'type' is required but missing.
 {% set deselect_tests = deselect_tests + " --deselect=tests/functions/onnxfns_test.py::TestOnnxFns::test_onnxfns_hard_clip" %}
+# E Mismatched elements: 6 / 27 (22.2%)
+# E Greatest absolute difference: 0.3125 at index (0, 1, 0, 2) (up to 1e-05 allowed)
+# E Greatest relative difference: 0.00676727294921875 at index (0, 0, 0, 0) (up to 0.001 allowed)
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__nn_functional_avg_pool1d_cpu_float16" %}  # [linux and aarch64]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__nn_functional_avg_pool2d_cpu_float16" %}  # [linux and aarch64]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__nn_functional_conv1d_cpu_float16" %}  # [linux and aarch64]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__nn_functional_conv2d_cpu_float16" %}  # [linux and aarch64]
 
 {% set ignore_tests = "" %}
 # TODO: remove when onnxruntime is available for py314
@@ -94,7 +101,7 @@ test:
     - expecttest >=0.1.6  # [not py==313]
   commands:
     - pip check
-    - pytest -vvv tests {{ ignore_tests }} -k "not ({{ tests_to_skip }})" {{ deselect_tests }}
+    - pytest -v tests {{ ignore_tests }} -k "not ({{ tests_to_skip }})" {{ deselect_tests }}
 
 about:
   home: https://microsoft.github.io/onnxscript

@@ -1,7 +1,3 @@
-channels:
-  - defaults
-  - sfe1ed40
-  
 upload_channels:
   - sfe1ed40
 
