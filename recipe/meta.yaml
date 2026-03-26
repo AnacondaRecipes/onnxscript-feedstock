@@ -13,6 +13,8 @@ build:
   number: 0
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   skip: true  # [py<39]
+  script_env:
+    - ONNX_SCRIPT_RELEASE=1
 
 requirements:
   host:
@@ -72,6 +74,8 @@ requirements:
 {% set ignore_tests = ignore_tests + " --ignore=tests/if_test.py" %}                           # [py==314]
 {% set ignore_tests = ignore_tests + " --ignore=tests/loop_test.py" %}                         # [py==314]
 {% set ignore_tests = ignore_tests + " --ignore=tests/optimizer/test_models.py" %}             # [py==314]
+# exclude due to problem with expecttest on py313
+{% set ignore_tests = ignore_tests + " --ignore=tests/function_libs/torch_lib/ops_test.py" %}  # [py==313]
 
 test:
   source_files:
@@ -86,7 +90,8 @@ test:
     - pytorch >=2.3
     - onnxruntime >=1.17.0  # [py<314]
     - torchvision >=0.18.0  # [py<314]
-    - expecttest >=0.1.6
+    # Resolver issue with expecttest on py313
+    - expecttest >=0.1.6  # [not py==313]
   commands:
     - pip check
     - pytest -v tests {{ ignore_tests }} -k "not ({{ tests_to_skip }})" {{ deselect_tests }}
