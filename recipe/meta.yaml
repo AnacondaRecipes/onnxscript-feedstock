@@ -44,19 +44,18 @@ requirements:
 {% set tests_to_skip = tests_to_skip + " or test_serialization_deserialization_produces_same_model_0034" %}
 {% set tests_to_skip = tests_to_skip + " or test_serialization_deserialization_produces_same_model_0035" %}
 {% set tests_to_skip = tests_to_skip + " or test_serialization_deserialization_produces_same_model_0036" %}
-{% set tests_to_skip = tests_to_skip + " or test_model_runs_and_matches_accuracy_after_optimization_0_mobilenetv2_100" %}
-{% set tests_to_skip = tests_to_skip + " or test_model_runs_and_matches_accuracy_after_optimization_1_Speech2Text2ForCausalLM" %}
-{% set tests_to_skip = tests_to_skip + " or test_model_runs_and_matches_accuracy_after_optimization_2_resnet18" %}
+{% set tests_to_skip = tests_to_skip + " or test_model_runs_and_matches_accuracy_after_optimization_" %}
 {% set tests_to_skip = tests_to_skip + " or test_optimizer_after_inlining" %}
 {% set tests_to_skip = tests_to_skip + " or test_it_can_be_serialized_as_graph_proto" %}
 {% set tests_to_skip = tests_to_skip + " or test_model_runs_and_matches_accuracy_after_conversion_fallback_true" %}
-# version of onnxruntime available doesn't support SplitToSequence
+# version of available onnxruntime doesn't support SplitToSequence, upstream CI is using onnxruntime 1.23.0, which is not available on channel yet
 # E       onnxruntime.capi.onnxruntime_pybind11_state.NotImplemented: [ONNXRuntimeError] : 9 : 
 # NOT_IMPLEMENTED : Could not find an implementation for SplitToSequence(11) node with name '_inlfunc_aten_split_with_sizes_n0
 {% set deselect_tests = " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__split_list_args_cpu_bool" %}
 {% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_complex_output_match_opinfo__matmul_cpu_complex64" %}
 {% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__split_cpu_bool" %}
 {% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__split_with_sizes_cpu_bool" %}
+# It is incompatibility between onnxscript and onnx version, upstream CI is using for tests onnx-weekly 1.21.0.dev20260302, on channel latest is onnx 1.20.1
 # E RuntimeError: Field 'shape' of 'type' is required but missing.
 {% set deselect_tests = deselect_tests + " --deselect=tests/functions/onnxfns_test.py::TestOnnxFns::test_onnxfns_hard_clip" %}
 
@@ -87,14 +86,15 @@ test:
     - pip
     - pytest !=7.1.0
     - parameterized
-    - pytorch >=2.3
+    # CI: nothing provides __cuda needed by pytorch-2.7.0-gpu_cuda128_py310h0e49702_302
+    - pytorch-cpu >=2.3
     - onnxruntime >=1.17.0  # [py<314]
     - torchvision >=0.18.0  # [py<314]
     # Resolver issue with expecttest on py313
     - expecttest >=0.1.6  # [not py==313]
   commands:
     - pip check
-    - pytest -v tests {{ ignore_tests }} -k "not ({{ tests_to_skip }})" {{ deselect_tests }}
+    - pytest -vvv tests {{ ignore_tests }} -k "not ({{ tests_to_skip }})" {{ deselect_tests }}
 
 about:
   home: https://microsoft.github.io/onnxscript
