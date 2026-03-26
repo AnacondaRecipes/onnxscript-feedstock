@@ -91,8 +91,7 @@ test:
     - pip
     - pytest !=7.1.0
     - parameterized
-    # Use pytorch CPU version. CI: nothing provides __cuda needed by pytorch-2.7.0-gpu_cuda128
-    - pytorch-cpu >=2.3
+    - pytorch >=2.3
     - onnxruntime >=1.17.0  # [py<314]
     - torchvision >=0.18.0  # [py<314]
     - expecttest >=0.1.6
