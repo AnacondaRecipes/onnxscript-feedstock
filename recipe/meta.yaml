@@ -93,7 +93,7 @@ test:
     - parameterized
     - pytorch >=2.3
     - onnxruntime >=1.17.0  # [py<314]
-    - torchvision >=0.18.0  # [py<314]
+    - torchvision >=0.18.0
     - expecttest >=0.1.6
   commands:
     - pip check
