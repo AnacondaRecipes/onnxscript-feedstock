@@ -26,7 +26,7 @@ requirements:
     - ml_dtypes
     - numpy
     - onnx-ir >=0.1.12,<2
-    - onnx >=1.16
+    - onnx >=1.17
     - packaging
     - typing_extensions >=4.10
 
