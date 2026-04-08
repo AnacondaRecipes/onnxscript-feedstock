@@ -1,47 +1,121 @@
 {% set name = "onnxscript" %}
-{% set version = "0.5.6" %}
+{% set version = "0.6.2" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/onnxscript-{{ version }}.tar.gz
-  sha256: cc3338b2976daffd2af0bb6ac4866a4dca76aefface1666a0d7bc65ad9850822
+  url: https://github.com/microsoft/{{ name }}/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: ba4e0042546aceccf29ae651800771d6a84df44fec70df9b270dc7f804b141bc
 
 build:
-  noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  skip: true  # [py<39]
+  script_env:
+    - ONNX_SCRIPT_RELEASE=1
 
 requirements:
   host:
-    - python {{ python_min }}
-    - setuptools >=70.0.0
     - pip
+    - python
+    - setuptools >=70.0.0
   run:
-    - python >={{ python_min }}
+    - python
     - ml_dtypes
     - numpy
     - onnx-ir >=0.1.12,<2
-    - onnx >=1.16
+    - onnx >=1.17
     - packaging
     - typing_extensions >=4.10
 
+# Some tests are using the models stored in git-lfs which requires manually downloading the models from git-lfs
+# serialized = b'version https://git-lfs.github.com/spec/v1\noid sha256:12d24be13a03ea8ddebcc5ea229390d49fb0da08ad1df896b03703c664e2def1\nsize 46921843\n'
+# >       decoded = typing.cast("Optional[int]", proto.ParseFromString(serialized))
+# E       google.protobuf.message.DecodeError: Error parsing message with type 'onnx.ModelProto'
+{% set tests_to_skip = "test_serialization_deserialization_produces_same_model_000" %}
+{% set tests_to_skip = tests_to_skip + " or test_serialization_deserialization_produces_same_model_001" %}
+{% set tests_to_skip = tests_to_skip + " or test_serialization_deserialization_produces_same_model_002" %}
+{% set tests_to_skip = tests_to_skip + " or test_serialization_deserialization_produces_same_model_0030" %}
+{% set tests_to_skip = tests_to_skip + " or test_serialization_deserialization_produces_same_model_0031" %}
+{% set tests_to_skip = tests_to_skip + " or test_serialization_deserialization_produces_same_model_0032" %}
+{% set tests_to_skip = tests_to_skip + " or test_serialization_deserialization_produces_same_model_0033" %}
+{% set tests_to_skip = tests_to_skip + " or test_serialization_deserialization_produces_same_model_0034" %}
+{% set tests_to_skip = tests_to_skip + " or test_serialization_deserialization_produces_same_model_0035" %}
+{% set tests_to_skip = tests_to_skip + " or test_serialization_deserialization_produces_same_model_0036" %}
+{% set tests_to_skip = tests_to_skip + " or test_model_runs_and_matches_accuracy_after_optimization_" %}
+{% set tests_to_skip = tests_to_skip + " or test_optimizer_after_inlining" %}
+{% set tests_to_skip = tests_to_skip + " or test_it_can_be_serialized_as_graph_proto" %}
+{% set tests_to_skip = tests_to_skip + " or test_model_runs_and_matches_accuracy_after_conversion_fallback_true" %}
+
+{% set deselect_tests =  "" %}
+# Latest ONNXRuntime is not available for py310
+# E       onnxruntime.capi.onnxruntime_pybind11_state.NotImplemented: [ONNXRuntimeError] : 9 : 
+  # NOT_IMPLEMENTED : Could not find an implementation for SplitToSequence(11) node with name '_inlfunc_aten_split_with_sizes_n0'
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__split_cpu_bool" %}  # [py==310]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__split_list_args_cpu_bool" %}  # [py==310]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__split_with_sizes_cpu_bool" %}  # [py==310]
+
+# Flaky tests
+# E Mismatched elements: 6 / 27 (22.2%)
+# E Greatest absolute difference: 0.3125 at index (0, 1, 0, 2) (up to 1e-05 allowed)
+# E Greatest relative difference: 0.00676727294921875 at index (0, 0, 0, 0) (up to 0.001 allowed)
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__nn_functional_avg_pool1d_cpu_float16" %}  # [unix]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__nn_functional_avg_pool2d_cpu_float16" %}  # [unix]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__nn_functional_conv1d_cpu_float16" %}  # [unix]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__nn_functional_conv2d_cpu_float16" %}  # [unix]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__atan2_cpu_float16" %}  # [unix]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__nn_functional_gelu_cpu_float16" %}  # [unix]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__nn_functional_hardswish_cpu_float16" %}  # [unix]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__nn_functional_mish_cpu_float16" %}  # [unix]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__nn_functional_softplus_cpu_float16" %}  # [unix]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__remainder_cpu_float16" %}  # [unix
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__addmv_cpu_float32" %}  # [unix]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_complex_output_match_opinfo__matmul_cpu_complex64" %}  # [unix]
+
+{% set ignore_tests = "" %}
+# TODO: remove when onnxruntime is available for py314
+{% set ignore_tests = ignore_tests + " --ignore=tests/eager_test.py" %}                        # [py==314]
+{% set ignore_tests = ignore_tests + " --ignore=tests/eager_mode_test.py" %}                   # [py==314]
+{% set ignore_tests = ignore_tests + " --ignore=tests/function_libs/torch_lib/ops_test.py" %}  # [py==314]
+{% set ignore_tests = ignore_tests + " --ignore=tests/functions/attr_test.py" %}               # [py==314]
+{% set ignore_tests = ignore_tests + " --ignore=tests/functions/gemmgelu_test.py" %}           # [py==314]
+{% set ignore_tests = ignore_tests + " --ignore=tests/functions/if_test.py" %}                 # [py==314]
+{% set ignore_tests = ignore_tests + " --ignore=tests/functions/onnxfns1A_test.py" %}          # [py==314]
+{% set ignore_tests = ignore_tests + " --ignore=tests/functions/onnxfns2_test.py" %}           # [py==314]
+{% set ignore_tests = ignore_tests + " --ignore=tests/functions/onnxfns_test.py" %}            # [py==314]
+{% set ignore_tests = ignore_tests + " --ignore=tests/if_test.py" %}                           # [py==314]
+{% set ignore_tests = ignore_tests + " --ignore=tests/loop_test.py" %}                         # [py==314]
+{% set ignore_tests = ignore_tests + " --ignore=tests/optimizer/test_models.py" %}             # [py==314]
+
 test:
+  source_files:
+    - tests
+    - testdata
   imports:
     - onnxscript
+  requires:
+    - pip
+    - pytest !=7.1.0
+    - parameterized
+    - pytorch >=2.3
+    - onnxruntime >=1.17.0  # [py<314]
+    - torchvision >=0.18.0
+    - expecttest >=0.1.6
   commands:
     - pip check
-  requires:
-    - python {{ python_min }}
-    - pip
+    - pytest -v tests {{ ignore_tests }} -k "not ({{ tests_to_skip }})" {{ deselect_tests }}
 
 about:
-  home: https://github.com/microsoft/onnxscript
+  home: https://microsoft.github.io/onnxscript
   summary: Naturally author ONNX functions and models using a subset of Python
+  description: Naturally author ONNX functions and models using a subset of Python
   license: MIT
   license_file: LICENSE
+  license_family: MIT
+  doc_url: https://microsoft.github.io/onnxscript
+  dev_url: https://github.com/microsoft/onnxscript
 
 extra:
   recipe-maintainers:
