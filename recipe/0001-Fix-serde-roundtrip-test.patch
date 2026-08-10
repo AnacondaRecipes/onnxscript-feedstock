@@ -1,0 +1,17 @@
+diff --git a/tests/ir/serde_roundtrip_test.py b/tests/ir/serde_roundtrip_test.py
+index 69d23d69..fecbd3de 100644
+--- a/tests/ir/serde_roundtrip_test.py
++++ b/tests/ir/serde_roundtrip_test.py
+@@ -38,7 +38,11 @@ class SerdeTest(unittest.TestCase):
+         ir_model = ir.serde.deserialize_model(model)
+         serialized = ir.serde.serialize_model(ir_model)
+ 
+-        onnxscript.testing.assert_onnx_proto_equal(serialized, model)
++        onnxscript.testing.assert_onnx_proto_equal(
++            serialized,
++            model,
++            ignore_initializer_value_proto=True,
++        )
+         onnx.checker.check_model(serialized)
+ 
+ 

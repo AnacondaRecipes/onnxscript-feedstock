@@ -1,13 +1,18 @@
 {% set name = "onnxscript" %}
-{% set version = "0.6.2" %}
+{% set version = "0.7.1" %}
 
 package:
-  name: {{ name|lower }}
+  name: {{ name }}
   version: {{ version }}
 
 source:
   url: https://github.com/microsoft/{{ name }}/archive/refs/tags/v{{ version }}.tar.gz
-  sha256: ba4e0042546aceccf29ae651800771d6a84df44fec70df9b270dc7f804b141bc
+  sha256: 788e28b34c0cae63d74e48922880dcdd7d2e33065a068d1982fe8c324e198efb
+  patches:
+    # Apply the same serde roundtrip test adjustment as onnx/ir-py#419
+    # to accept benign initializer value_info differences exposed by ONNX 1.22.
+    # Remove once this addressed upstream in onnxscript.
+    - 0001-Fix-serde-roundtrip-test.patch
 
 build:
   number: 0
@@ -25,7 +30,7 @@ requirements:
     - python
     - ml_dtypes
     - numpy
-    - onnx-ir >=0.1.12,<2
+    - onnx-ir >=0.1.16,<2
     - onnx >=1.17
     - packaging
     - typing_extensions >=4.10
@@ -74,20 +79,13 @@ requirements:
 {% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__addmv_cpu_float32" %}  # [unix]
 {% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_complex_output_match_opinfo__matmul_cpu_complex64" %}  # [unix]
 
-{% set ignore_tests = "" %}
-# TODO: remove when onnxruntime is available for py314
-{% set ignore_tests = ignore_tests + " --ignore=tests/eager_test.py" %}                        # [py==314]
-{% set ignore_tests = ignore_tests + " --ignore=tests/eager_mode_test.py" %}                   # [py==314]
-{% set ignore_tests = ignore_tests + " --ignore=tests/function_libs/torch_lib/ops_test.py" %}  # [py==314]
-{% set ignore_tests = ignore_tests + " --ignore=tests/functions/attr_test.py" %}               # [py==314]
-{% set ignore_tests = ignore_tests + " --ignore=tests/functions/gemmgelu_test.py" %}           # [py==314]
-{% set ignore_tests = ignore_tests + " --ignore=tests/functions/if_test.py" %}                 # [py==314]
-{% set ignore_tests = ignore_tests + " --ignore=tests/functions/onnxfns1A_test.py" %}          # [py==314]
-{% set ignore_tests = ignore_tests + " --ignore=tests/functions/onnxfns2_test.py" %}           # [py==314]
-{% set ignore_tests = ignore_tests + " --ignore=tests/functions/onnxfns_test.py" %}            # [py==314]
-{% set ignore_tests = ignore_tests + " --ignore=tests/if_test.py" %}                           # [py==314]
-{% set ignore_tests = ignore_tests + " --ignore=tests/loop_test.py" %}                         # [py==314]
-{% set ignore_tests = ignore_tests + " --ignore=tests/optimizer/test_models.py" %}             # [py==314]
+# Float16 precision differences on Linux aarch 64 can exceed strict test tolerances.
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__div_mode_floor_rounding_cpu_float16 " %} #[unix and aarch64]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__log1p_cpu_float16 " %} #[unix and aarch64]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__log2_cpu_float16 " %} #[unix and aarch64]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__nn_functional_hardsigmoid_cpu_float16" %} #[unix and aarch64]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__nn_functional_selu_cpu_float16 " %} #[unix and aarch64]
+{% set deselect_tests = deselect_tests + " --deselect=tests/function_libs/torch_lib/ops_test.py::TestOutputConsistencyFullGraphCPU::test_output_match_opinfo__ops_aten_floor_divide_cpu_float16" %} #[unix and aarch64]
 
 test:
   source_files:
@@ -100,12 +98,12 @@ test:
     - pytest !=7.1.0
     - parameterized
     - pytorch >=2.3
-    - onnxruntime >=1.17.0  # [py<314]
+    - onnxruntime >=1.17.0
     - torchvision >=0.18.0
     - expecttest >=0.1.6
   commands:
     - pip check
-    - pytest -v tests {{ ignore_tests }} -k "not ({{ tests_to_skip }})" {{ deselect_tests }}
+    - pytest -v tests -k "not ({{ tests_to_skip }})" {{ deselect_tests }}
 
 about:
   home: https://microsoft.github.io/onnxscript
